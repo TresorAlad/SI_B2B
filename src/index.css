@@ -1,0 +1,81 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --font-sans: 'Outfit', sans-serif;
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6; /* Cobalt blue primary */
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --color-brand-950: #172554;
+  --color-darkbg-50: #f8fafc;
+  --color-darkbg-100: #f1f5f9;
+  --color-darkbg-900: #0f172a;
+  --color-darkbg-950: #020617;
+  --shadow-premium: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 8px -1px rgba(0, 0, 0, 0.03);
+  --shadow-premium-hover: 0 12px 30px -4px rgba(0, 0, 0, 0.08), 0 4px 12px -2px rgba(0, 0, 0, 0.04);
+}
+
+body {
+  @apply bg-slate-50 text-slate-800 font-sans antialiased selection:bg-brand-500 selection:text-white;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom styled premium scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-slate-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-slate-300 rounded-full hover:bg-slate-400 transition-colors;
+}
+
+/* Custom CSS for Range Slider track density representation as in the mockup image */
+.slider-bar-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 24px;
+  margin-bottom: -6px;
+  padding: 0 4px;
+}
+
+.slider-bar-item {
+  flex: 1;
+  background-color: #E2E8F0;
+  border-radius: 1px;
+  transition: all 0.2s ease;
+}
+
+.slider-bar-item.active {
+  @apply bg-brand-400;
+}
+
+/* Glassmorphism utility for Connexion/Inscription */
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+@keyframes jump {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+.animate-jump {
+  animation: jump 0.3s ease-out;
+}

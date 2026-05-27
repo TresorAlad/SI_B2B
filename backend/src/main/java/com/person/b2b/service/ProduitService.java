@@ -1,0 +1,138 @@
+package com.person.b2b.service;
+
+import com.person.b2b.entity.CategorieProduit;
+import com.person.b2b.entity.Produit;
+import com.person.b2b.entity.StatutProduit;
+import com.person.b2b.entity.User;
+import com.person.b2b.exception.EntityNotFoundException;
+import com.person.b2b.exception.ForbiddenOperationException;
+import com.person.b2b.repository.ProduitRepository;
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+@Service
+@Transactional
+public class ProduitService {
+
+    private final ProduitRepository produitRepository;
+    private final UserService userService;
+    private final CategorieProduitService categorieProduitService;
+
+    public ProduitService(
+            ProduitRepository produitRepository,
+            UserService userService,
+            CategorieProduitService categorieProduitService) {
+        this.produitRepository = produitRepository;
+        this.userService = userService;
+        this.categorieProduitService = categorieProduitService;
+    }
+
+    @Transactional(readOnly = true)
+    public List<Produit> findAll() {
+        return produitRepository.findAll();
+    }
+
+    @Transactional(readOnly = true)
+    public List<Produit> findByVendeur(Long vendeurId) {
+        userService.findById(vendeurId);
+        return produitRepository.findByVendeurIdOrderByDatePublicationDesc(vendeurId);
+    }
+
+    @Transactional(readOnly = true)
+    public List<Produit> findFeatured() {
+        return produitRepository.findByMisEnAvantTrueOrderByDatePublicationDesc();
+    }
+
+    @Transactional(readOnly = true)
+    public Produit findById(Long id) {
+        return produitRepository.findById(id)
+                .orElseThrow(() -> new EntityNotFoundException("Produit introuvable : " + id));
+    }
+
+    public Produit create(
+            Long vendeurId,
+            String name,
+            String description,
+            Long price,
+            String categorieNom,
+            String brand,
+            String whatsapp,
+            String image,
+            StatutProduit statut,
+            boolean nouveau) {
+        User vendeur = userService.findById(vendeurId);
+        CategorieProduit categorie = categorieProduitService.findOrCreateByNom(categorieNom);
+
+        Produit produit = new Produit();
+        applyFields(produit, name, description, price, brand, whatsapp, image, statut, nouveau);
+        produit.setVendeur(vendeur);
+        produit.setCategorie(categorie);
+        produit.setViews(0);
+        produit.setDatePublication(LocalDate.now());
+        produit.setMisEnAvant(false);
+
+        return produitRepository.save(produit);
+    }
+
+    public Produit update(
+            Long produitId,
+            Long vendeurId,
+            String name,
+            String description,
+            Long price,
+            String categorieNom,
+            String brand,
+            String whatsapp,
+            String image,
+            StatutProduit statut,
+            boolean nouveau) {
+        Produit produit = findOwnedByVendeur(produitId, vendeurId);
+        CategorieProduit categorie = categorieProduitService.findOrCreateByNom(categorieNom);
+
+        applyFields(produit, name, description, price, brand, whatsapp, image, statut, nouveau);
+        produit.setCategorie(categorie);
+
+        return produitRepository.save(produit);
+    }
+
+    public void delete(Long produitId, Long vendeurId) {
+        Produit produit = findOwnedByVendeur(produitId, vendeurId);
+        produitRepository.delete(produit);
+    }
+
+    public Produit incrementViews(Long produitId) {
+        Produit produit = findById(produitId);
+        produit.setViews(produit.getViews() + 1);
+        return produitRepository.save(produit);
+    }
+
+    private Produit findOwnedByVendeur(Long produitId, Long vendeurId) {
+        Produit produit = findById(produitId);
+        if (!produit.getVendeur().getId().equals(vendeurId)) {
+            throw new ForbiddenOperationException("Ce produit n'appartient pas à cet utilisateur");
+        }
+        return produit;
+    }
+
+    private void applyFields(
+            Produit produit,
+            String name,
+            String description,
+            Long price,
+            String brand,
+            String whatsapp,
+            String image,
+            StatutProduit statut,
+            boolean nouveau) {
+        produit.setName(name);
+        produit.setDescription(description);
+        produit.setPrice(price);
+        produit.setBrand(brand);
+        produit.setWhatsapp(whatsapp);
+        produit.setImage(image);
+        produit.setStatut(statut != null ? statut : StatutProduit.DISPONIBLE);
+        produit.setNouveau(nouveau);
+    }
+}
