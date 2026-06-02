@@ -52,8 +52,8 @@ public class Produit {
     @Column(nullable = false, length = 20)
     private String whatsapp;
 
-    @Column(nullable = false, length = 2048)
-    private String image;
+    @Column(nullable = false, columnDefinition = "bytea")
+    private byte[] image;
 
     @Column(nullable = false)
     private LocalDate datePublication;

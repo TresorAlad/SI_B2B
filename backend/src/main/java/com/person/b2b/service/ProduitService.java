@@ -59,7 +59,7 @@ public class ProduitService {
             String categorieNom,
             String brand,
             String whatsapp,
-            String image,
+            byte[] image,
             StatutProduit statut,
             boolean nouveau) {
         User vendeur = userService.findById(vendeurId);
@@ -85,7 +85,7 @@ public class ProduitService {
             String categorieNom,
             String brand,
             String whatsapp,
-            String image,
+            byte[] image,
             StatutProduit statut,
             boolean nouveau) {
         Produit produit = findOwnedByVendeur(produitId, vendeurId);
@@ -123,7 +123,7 @@ public class ProduitService {
             Long price,
             String brand,
             String whatsapp,
-            String image,
+            byte[] image,
             StatutProduit statut,
             boolean nouveau) {
         produit.setName(name);

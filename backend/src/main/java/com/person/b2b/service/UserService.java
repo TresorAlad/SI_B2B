@@ -10,6 +10,7 @@ import com.person.b2b.repository.UserRepository;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,10 +20,15 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final ProduitRepository produitRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public UserService(UserRepository userRepository, ProduitRepository produitRepository) {
+    public UserService(
+            UserRepository userRepository,
+            ProduitRepository produitRepository,
+            PasswordEncoder passwordEncoder) {
         this.userRepository = userRepository;
         this.produitRepository = produitRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @Transactional(readOnly = true)
@@ -45,7 +51,7 @@ public class UserService {
         User user = new User();
         user.setName(name);
         user.setEmail(email);
-        user.setPassword(password);
+        user.setPassword(passwordEncoder.encode(password));
         user.setWhatsapp(whatsapp != null && !whatsapp.isBlank() ? whatsapp : "22890000000");
         return userRepository.save(user);
     }
@@ -54,7 +60,7 @@ public class UserService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(InvalidCredentialsException::new);
 
-        if (!user.getPassword().equals(password)) {
+        if (!passwordEncoder.matches(password, user.getPassword())) {
             throw new InvalidCredentialsException();
         }
         return user;
