@@ -6,11 +6,15 @@ import com.person.b2b.dto.UserResponse;
 import com.person.b2b.entity.User;
 import com.person.b2b.security.JwtUtil;
 import com.person.b2b.service.UserService;
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 import java.util.List;
 import java.util.Map;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -20,6 +24,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/api/users")
+@Validated
 public class UserController {
 
     private final UserService userService;
@@ -30,11 +35,16 @@ public class UserController {
         this.jwtUtil = jwtUtil;
     }
 
+    @GetMapping("/me")
+    public ResponseEntity<UserResponse> me(@AuthenticationPrincipal Long userId) {
+        return ResponseEntity.ok(UserResponse.from(userService.findById(userId)));
+    }
+
     @PostMapping("/register")
     public ResponseEntity<AuthResponse> register(
-            @RequestParam String name,
-            @RequestParam String email,
-            @RequestParam String password,
+            @RequestParam @NotBlank @Size(max = 150) String name,
+            @RequestParam @NotBlank @Email String email,
+            @RequestParam @NotBlank @Size(min = 6, max = 100) String password,
             @RequestParam(required = false) String whatsapp) {
         User user = userService.register(name, email, password, whatsapp);
         String token = jwtUtil.generateToken(user.getId());
@@ -44,8 +54,8 @@ public class UserController {
 
     @PostMapping("/login")
     public ResponseEntity<AuthResponse> login(
-            @RequestParam String email,
-            @RequestParam String password) {
+            @RequestParam @NotBlank @Email String email,
+            @RequestParam @NotBlank String password) {
         User user = userService.login(email, password);
         String token = jwtUtil.generateToken(user.getId());
         return ResponseEntity.ok(new AuthResponse(token, UserResponse.from(user)));

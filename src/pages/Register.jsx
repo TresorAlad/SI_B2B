@@ -9,6 +9,7 @@ export default function Register() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -17,16 +18,22 @@ export default function Register() {
   const from = location.state?.from?.pathname || '/dashboard';
   const showAuthRequiredAlert = location.state?.requireAuth;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !email || !password) {
       setError('Veuillez remplir tous les champs.');
       return;
     }
-    
-    // Simulate register
-    register(name, email, password);
-    navigate(from, { replace: true });
+
+    setIsSubmitting(true);
+    const result = await register(name, email, password);
+    setIsSubmitting(false);
+
+    if (result.success) {
+      navigate(from, { replace: true });
+    } else {
+      setError(result.error || 'Échec de l\'inscription.');
+    }
   };
 
   return (
@@ -113,9 +120,10 @@ export default function Register() {
 
           <button
             type="submit"
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all transform active:scale-98"
+            disabled={isSubmitting}
+            className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all transform active:scale-98"
           >
-            Créer mon compte
+            {isSubmitting ? 'Création...' : 'Créer mon compte'}
           </button>
         </form>
 

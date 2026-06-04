@@ -5,7 +5,8 @@ import ProductStatusBadge from './ProductStatusBadge';
 import FavoriteButton from './FavoriteButton';
 
 export default function ProductCard({ product }) {
-  const { id, name, price, category, views, status, isNew, whatsapp, image } = product;
+  const { id, name, price, category, views, status, isNew } = product;
+  const imageSrc = product.imageUrl || product.image;
 
   // Format currency neatly as FCFA (e.g., 350 000 FCFA)
   const formatPrice = (value) => {
@@ -38,7 +39,7 @@ export default function ProductCard({ product }) {
           </span>
         )}
         <img
-          src={image}
+          src={imageSrc}
           alt={name}
           className="max-h-full max-w-[85%] object-contain transform group-hover:scale-105 group-hover:-translate-y-1 transition-all duration-500 filter drop-shadow-md"
         />

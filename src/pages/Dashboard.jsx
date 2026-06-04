@@ -4,17 +4,12 @@ import { MarketplaceContext } from '../context/MarketplaceContext';
 import { HiOutlinePlus, HiOutlinePencilSquare, HiOutlineTrash, HiOutlineEye, HiOutlineCircleStack, HiOutlineChartBar, HiOutlineCheckBadge } from 'react-icons/hi2';
 
 export default function Dashboard() {
-  const { currentUser, products, deleteProduct } = useContext(MarketplaceContext);
+  const { currentUser, myProducts, isLoadingMyProducts, deleteProduct } = useContext(MarketplaceContext);
   const navigate = useNavigate();
   
   // Local state for delete confirmation modal
   const [productToDelete, setProductToDelete] = useState(null);
-
-  // Filter listings belonging to the active vendor
-  const myProducts = useMemo(() => {
-    if (!currentUser) return [];
-    return products.filter(p => p.sellerName === currentUser.name);
-  }, [products, currentUser]);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Compute analytics
   const analytics = useMemo(() => {
@@ -29,10 +24,16 @@ export default function Dashboard() {
     setProductToDelete(product);
   };
 
-  const confirmDelete = () => {
-    if (productToDelete) {
-      deleteProduct(productToDelete.id);
+  const confirmDelete = async () => {
+    if (!productToDelete) return;
+    setIsDeleting(true);
+    try {
+      await deleteProduct(productToDelete.id);
       setProductToDelete(null);
+    } catch (error) {
+      console.error('Erreur suppression:', error);
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -136,7 +137,11 @@ export default function Dashboard() {
           <span className="text-xs font-semibold text-slate-400">{myProducts.length} références</span>
         </div>
 
-        {myProducts.length > 0 ? (
+        {isLoadingMyProducts ? (
+          <div className="py-16 text-center text-sm text-slate-400 font-semibold">
+            Chargement de votre catalogue...
+          </div>
+        ) : myProducts.length > 0 ? (
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
@@ -156,7 +161,7 @@ export default function Dashboard() {
                     {/* Product Cell */}
                     <td className="px-6 py-4 flex items-center space-x-3.5">
                       <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 p-1 flex items-center justify-center shrink-0">
-                        <img src={product.image} alt={product.name} className="max-h-full object-contain" />
+                        <img src={product.imageUrl || product.image} alt={product.name} className="max-h-full object-contain" />
                       </div>
                       <Link to={`/product/${product.id}`} className="font-extrabold text-slate-800 hover:text-brand-500 truncate max-w-[200px]">
                         {product.name}
@@ -255,9 +260,10 @@ export default function Dashboard() {
               </button>
               <button
                 onClick={confirmDelete}
-                className="flex-1 bg-rose-600 hover:bg-rose-700 text-white font-bold py-2.5 rounded-xl text-xs shadow-md shadow-rose-600/10 transition-colors"
+                disabled={isDeleting}
+                className="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-xs shadow-md shadow-rose-600/10 transition-colors"
               >
-                Supprimer
+                {isDeleting ? 'Suppression...' : 'Supprimer'}
               </button>
             </div>
           </div>

@@ -4,7 +4,7 @@ import ProductCard from '../components/ProductCard';
 import { HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineArrowsUpDown, HiOutlineXMark } from 'react-icons/hi2';
 
 export default function Accueil() {
-  const { products } = useContext(MarketplaceContext);
+  const { products, isLoadingProducts } = useContext(MarketplaceContext);
 
   // --- Filtering & Sorting States ---
   const [searchQuery, setSearchQuery] = useState('');
@@ -384,7 +384,11 @@ export default function Accueil() {
           </div>
 
           {/* Product cards grid */}
-          {filteredProducts.length > 0 ? (
+          {isLoadingProducts ? (
+            <div className="bg-white p-12 text-center rounded-2xl border border-slate-100 shadow-sm">
+              <p className="text-sm text-slate-400 font-semibold">Chargement des produits...</p>
+            </div>
+          ) : filteredProducts.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 animate-fade-in">
               {filteredProducts.map((product) => (
                 <ProductCard key={product.id} product={product} />

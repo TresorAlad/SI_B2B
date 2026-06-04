@@ -5,21 +5,26 @@ import ProductCard from '../components/ProductCard';
 import { HiOutlineHeart, HiOutlineArrowLeft } from 'react-icons/hi2';
 
 export default function Favorites() {
-  const { products, favorites } = useContext(MarketplaceContext);
+  const { products, favorites, favoriteProducts, token, isLoadingFavorites } = useContext(MarketplaceContext);
 
-  // Retrieve products marked as favorite
-  const favoriteProducts = useMemo(() => {
-    return products.filter(p => favorites.includes(p.id));
-  }, [products, favorites]);
+  const favoriteProductsList = useMemo(() => {
+    if (token) {
+      return favoriteProducts;
+    }
+    return products.filter((p) => favorites.includes(p.id));
+  }, [token, favoriteProducts, products, favorites]);
 
   return (
     <div className="space-y-6">
       
-      {/* Page Header */}
       <div className="flex items-center justify-between border-b border-slate-100 pb-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Mes Coups de Cœur</h1>
-          <p className="text-xs text-slate-400 mt-1 font-semibold">Consultez et négociez rapidement vos produits mis en favoris.</p>
+          <p className="text-xs text-slate-400 mt-1 font-semibold">
+            {token
+              ? 'Favoris synchronisés avec votre compte.'
+              : 'Connectez-vous pour synchroniser vos favoris sur tous vos appareils.'}
+          </p>
         </div>
 
         <Link
@@ -31,15 +36,18 @@ export default function Favorites() {
         </Link>
       </div>
 
-      {/* Favorites Grid / Empty State */}
-      {favoriteProducts.length > 0 ? (
+      {isLoadingFavorites && token ? (
+        <div className="py-12 text-center text-sm text-slate-400 font-semibold">
+          Chargement de vos favoris...
+        </div>
+      ) : favoriteProductsList.length > 0 ? (
         <div className="space-y-4">
           <span className="text-xs font-semibold text-slate-400 bg-white px-3 py-1.5 rounded-lg border border-slate-100 shadow-sm inline-block">
-            {favoriteProducts.length} {favoriteProducts.length > 1 ? 'produits sauvegardés' : 'produit sauvegardé'}
+            {favoriteProductsList.length} {favoriteProductsList.length > 1 ? 'produits sauvegardés' : 'produit sauvegardé'}
           </span>
           
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 animate-fade-in">
-            {favoriteProducts.map((product) => (
+            {favoriteProductsList.map((product) => (
               <ProductCard key={product.id} product={product} />
             ))}
           </div>

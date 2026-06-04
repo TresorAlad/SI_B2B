@@ -91,13 +91,23 @@ public class ProduitController {
             @RequestParam String categorieNom,
             @RequestParam String brand,
             @RequestParam String whatsapp,
-            @RequestPart("image") MultipartFile image,
+            @RequestPart(value = "image", required = false) MultipartFile image,
             @RequestParam(required = false) StatutProduit statut,
             @RequestParam(defaultValue = "true") boolean nouveau) throws IOException {
+        boolean updateImage = image != null && !image.isEmpty();
         Produit produit = produitService.update(
                 id, vendeurId, name, description, price, categorieNom, brand, whatsapp,
-                image.getBytes(), statut, nouveau);
+                updateImage ? image.getBytes() : null, statut, nouveau, updateImage);
         return ResponseEntity.ok(ProduitResponse.from(produit));
+    }
+
+    @PatchMapping("/{id}/mis-en-avant")
+    public ResponseEntity<ProduitResponse> setMisEnAvant(
+            @AuthenticationPrincipal Long vendeurId,
+            @PathVariable Long id,
+            @RequestParam boolean misEnAvant) {
+        return ResponseEntity.ok(
+                ProduitResponse.from(produitService.setMisEnAvant(id, vendeurId, misEnAvant)));
     }
 
     @DeleteMapping("/{id}")

@@ -87,11 +87,13 @@ public class ProduitService {
             String whatsapp,
             byte[] image,
             StatutProduit statut,
-            boolean nouveau) {
+            boolean nouveau,
+            boolean updateImage) {
         Produit produit = findOwnedByVendeur(produitId, vendeurId);
         CategorieProduit categorie = categorieProduitService.findOrCreateByNom(categorieNom);
 
-        applyFields(produit, name, description, price, brand, whatsapp, image, statut, nouveau);
+        applyFields(produit, name, description, price, brand, whatsapp,
+                updateImage ? image : produit.getImage(), statut, nouveau);
         produit.setCategorie(categorie);
 
         return produitRepository.save(produit);
@@ -105,6 +107,12 @@ public class ProduitService {
     public Produit incrementViews(Long produitId) {
         Produit produit = findById(produitId);
         produit.setViews(produit.getViews() + 1);
+        return produitRepository.save(produit);
+    }
+
+    public Produit setMisEnAvant(Long produitId, Long vendeurId, boolean misEnAvant) {
+        Produit produit = findOwnedByVendeur(produitId, vendeurId);
+        produit.setMisEnAvant(misEnAvant);
         return produitRepository.save(produit);
     }
 

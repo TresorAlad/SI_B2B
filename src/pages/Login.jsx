@@ -8,6 +8,7 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
   
   const navigate = useNavigate();
   const location = useLocation();
@@ -16,22 +17,22 @@ export default function Login() {
   const from = location.state?.from?.pathname || '/dashboard';
   const showAuthRequiredAlert = location.state?.requireAuth;
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Veuillez remplir tous les champs.');
       return;
     }
-    
-    // Simulate login
-    login(email, password);
-    navigate(from, { replace: true });
-  };
 
-  // Quick Demo account login for convenient evaluation
-  const handleQuickLogin = () => {
-    login('jean@togo.tg', 'password123');
-    navigate(from, { replace: true });
+    setIsSubmitting(true);
+    const result = await login(email, password);
+    setIsSubmitting(false);
+
+    if (result.success) {
+      navigate(from, { replace: true });
+    } else {
+      setError(result.error || 'Échec de la connexion.');
+    }
   };
 
   return (
@@ -108,27 +109,12 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-slate-900 hover:bg-slate-800 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all transform active:scale-98"
+            disabled={isSubmitting}
+            className="w-full bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white font-bold py-2.5 rounded-xl text-xs shadow-md transition-all transform active:scale-98"
           >
-            Se connecter
+            {isSubmitting ? 'Connexion...' : 'Se connecter'}
           </button>
         </form>
-
-        {/* Separator line */}
-        <div className="my-6 flex items-center justify-between">
-          <div className="h-[1px] bg-slate-200 w-full"></div>
-          <span className="text-[10px] text-slate-400 font-bold uppercase px-3 shrink-0">Ou</span>
-          <div className="h-[1px] bg-slate-200 w-full"></div>
-        </div>
-
-        {/* Dynamic Demo Quick Login button */}
-        <button
-          onClick={handleQuickLogin}
-          type="button"
-          className="w-full bg-brand-50 hover:bg-brand-100 text-brand-700 font-bold py-2.5 rounded-xl text-xs border border-brand-200/60 shadow-sm transition-all flex items-center justify-center space-x-2"
-        >
-          <span>Accès rapide : Compte Vendeur Démo</span>
-        </button>
 
         {/* Bottom register link */}
         <p className="text-center text-xs text-slate-500 mt-6 font-semibold">

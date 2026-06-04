@@ -12,6 +12,10 @@ dist
 dist-ssr
 *.local
 
+# Secrets
+.env
+backend/.env
+
 # Java / Maven
 backend/target/
 
