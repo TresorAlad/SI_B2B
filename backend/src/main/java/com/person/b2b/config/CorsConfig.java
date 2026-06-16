@@ -22,7 +22,8 @@ public class CorsConfig {
 
         List<String> patterns = new ArrayList<>(List.of(
                 "https://*.vercel.app",
-                "http://localhost:*"));
+                "http://localhost:*",
+                "http://127.0.0.1:*"));
         Arrays.stream(allowedOrigins.split(","))
                 .map(String::trim)
                 .filter(origin -> !origin.isBlank())
@@ -31,7 +32,9 @@ public class CorsConfig {
         config.setAllowedOriginPatterns(patterns);
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        config.setExposedHeaders(List.of("Authorization"));
+        // JWT via header (pas de cookies) → pas besoin de credentials CORS
+        config.setAllowCredentials(false);
         config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

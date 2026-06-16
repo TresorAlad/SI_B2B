@@ -6,7 +6,6 @@ import {
   HiOutlineUsers,
   HiOutlineShoppingBag,
   HiOutlineEye,
-  HiOutlineTag,
   HiOutlineChartBar,
   HiOutlineShieldCheck,
 } from 'react-icons/hi2';
@@ -90,9 +89,8 @@ export default function AdminDashboard() {
         <StatCard icon={HiOutlineShoppingBag} label="Produits" value={stats.totalProduits} accent="amber" />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
         <StatCard icon={HiOutlineEye} label="Vues totales" value={stats.totalVues} accent="brand" />
-        <StatCard icon={HiOutlineTag} label="Catégories" value={stats.totalCategories} accent="slate" />
         <StatCard icon={HiOutlineChartBar} label="Mis en avant" value={stats.produitsMisEnAvant} accent="emerald" />
         <StatCard icon={HiOutlineShoppingBag} label="Disponibles" value={stats.produitsDisponibles} accent="emerald" />
       </div>
@@ -115,11 +113,6 @@ export default function AdminDashboard() {
             <span className="text-lg font-extrabold text-rose-800">{stats.produitsIndisponibles}</span>
           </div>
         </div>
-      </div>
-
-      <div className="mt-6 p-4 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-500 font-medium">
-        Compte admin par défaut : <strong className="text-slate-700">admin@b2b.hunt</strong> /{' '}
-        <strong className="text-slate-700">Admin@2026</strong> (configurable via variables d'environnement)
       </div>
     </div>
   );
