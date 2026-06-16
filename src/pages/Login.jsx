@@ -1,7 +1,8 @@
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { MarketplaceContext } from '../context/MarketplaceContext';
-import { HiOutlineEnvelope, HiOutlineLockClosed } from 'react-icons/hi2';
+import PasswordInput from '../components/PasswordInput';
+import { HiOutlineEnvelope } from 'react-icons/hi2';
 
 export default function Login() {
   const { login } = useContext(MarketplaceContext);
@@ -29,7 +30,8 @@ export default function Login() {
     setIsSubmitting(false);
 
     if (result.success) {
-      navigate(from, { replace: true });
+      const destination = result.user?.role === 'ADMIN' ? '/admin' : from;
+      navigate(destination, { replace: true });
     } else {
       setError(result.error || 'Échec de la connexion.');
     }
@@ -87,23 +89,14 @@ export default function Login() {
 
           <div>
             <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Mot de passe</label>
-            <div className="relative">
-              <HiOutlineLockClosed className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => { setPassword(e.target.value); setError(''); }}
-                placeholder="••••••••••••"
-                className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:border-brand-500 focus:bg-white transition-all font-semibold"
-              />
-            </div>
+            <PasswordInput
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); setError(''); }}
+              placeholder="••••••••••••"
+            />
           </div>
 
-          <div className="flex justify-between items-center text-xs pt-1">
-            <label className="flex items-center space-x-1.5 font-semibold text-slate-500 cursor-pointer">
-              <input type="checkbox" className="rounded border-slate-300 text-brand-500 focus:ring-brand-500" />
-              <span>Se souvenir</span>
-            </label>
+          <div className="flex justify-end text-xs pt-1">
             <a href="#" className="font-bold text-brand-500 hover:text-brand-600">Mot de passe oublié ?</a>
           </div>
 

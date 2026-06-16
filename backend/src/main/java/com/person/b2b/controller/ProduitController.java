@@ -1,8 +1,10 @@
 package com.person.b2b.controller;
 
 import com.person.b2b.dto.ProduitResponse;
+import com.person.b2b.dto.ProduitSummaryResponse;
 import com.person.b2b.entity.Produit;
 import com.person.b2b.entity.StatutProduit;
+import com.person.b2b.exception.BadRequestException;
 import com.person.b2b.service.ProduitService;
 import java.io.IOException;
 import java.util.List;
@@ -33,21 +35,21 @@ public class ProduitController {
     }
 
     @GetMapping
-    public ResponseEntity<List<ProduitResponse>> findAll() {
+    public ResponseEntity<List<ProduitSummaryResponse>> findAll() {
         return ResponseEntity.ok(
-                produitService.findAll().stream().map(ProduitResponse::from).toList());
+                produitService.findAll().stream().map(ProduitSummaryResponse::from).toList());
     }
 
     @GetMapping("/mis-en-avant")
-    public ResponseEntity<List<ProduitResponse>> findFeatured() {
+    public ResponseEntity<List<ProduitSummaryResponse>> findFeatured() {
         return ResponseEntity.ok(
-                produitService.findFeatured().stream().map(ProduitResponse::from).toList());
+                produitService.findFeatured().stream().map(ProduitSummaryResponse::from).toList());
     }
 
     @GetMapping("/vendeur/{vendeurId}")
-    public ResponseEntity<List<ProduitResponse>> findByVendeur(@PathVariable Long vendeurId) {
+    public ResponseEntity<List<ProduitSummaryResponse>> findByVendeur(@PathVariable Long vendeurId) {
         return ResponseEntity.ok(
-                produitService.findByVendeur(vendeurId).stream().map(ProduitResponse::from).toList());
+                produitService.findByVendeur(vendeurId).stream().map(ProduitSummaryResponse::from).toList());
     }
 
     @GetMapping("/{id}")
@@ -70,11 +72,14 @@ public class ProduitController {
             @RequestParam String description,
             @RequestParam Long price,
             @RequestParam String categorieNom,
-            @RequestParam String brand,
+            @RequestParam(defaultValue = "-") String brand,
             @RequestParam String whatsapp,
             @RequestPart("image") MultipartFile image,
             @RequestParam(required = false) StatutProduit statut,
             @RequestParam(defaultValue = "true") boolean nouveau) throws IOException {
+        if (image == null || image.isEmpty()) {
+            throw new BadRequestException("L'image du produit est obligatoire");
+        }
         Produit produit = produitService.create(
                 vendeurId, name, description, price, categorieNom, brand, whatsapp,
                 image.getBytes(), statut, nouveau);
@@ -89,7 +94,7 @@ public class ProduitController {
             @RequestParam String description,
             @RequestParam Long price,
             @RequestParam String categorieNom,
-            @RequestParam String brand,
+            @RequestParam(defaultValue = "-") String brand,
             @RequestParam String whatsapp,
             @RequestPart(value = "image", required = false) MultipartFile image,
             @RequestParam(required = false) StatutProduit statut,
@@ -119,7 +124,7 @@ public class ProduitController {
     }
 
     @PatchMapping("/{id}/vues")
-    public ResponseEntity<ProduitResponse> incrementViews(@PathVariable Long id) {
-        return ResponseEntity.ok(ProduitResponse.from(produitService.incrementViews(id)));
+    public ResponseEntity<ProduitSummaryResponse> incrementViews(@PathVariable Long id) {
+        return ResponseEntity.ok(ProduitSummaryResponse.from(produitService.incrementViews(id)));
     }
 }

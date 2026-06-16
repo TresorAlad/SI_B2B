@@ -1,8 +1,9 @@
 package com.person.b2b.controller;
 
 import com.person.b2b.dto.AuthResponse;
-import com.person.b2b.dto.ProduitResponse;
+import com.person.b2b.dto.ProduitSummaryResponse;
 import com.person.b2b.dto.UserResponse;
+import com.person.b2b.entity.Sexe;
 import com.person.b2b.entity.User;
 import com.person.b2b.security.JwtUtil;
 import com.person.b2b.service.UserService;
@@ -44,9 +45,13 @@ public class UserController {
     public ResponseEntity<AuthResponse> register(
             @RequestParam @NotBlank @Size(max = 150) String name,
             @RequestParam @NotBlank @Email String email,
+            @RequestParam Sexe sexe,
+            @RequestParam @NotBlank @Size(min = 2, max = 5) String paysCode,
+            @RequestParam @NotBlank @Size(max = 20) String telephone,
             @RequestParam @NotBlank @Size(min = 6, max = 100) String password,
-            @RequestParam(required = false) String whatsapp) {
-        User user = userService.register(name, email, password, whatsapp);
+            @RequestParam @NotBlank @Size(min = 6, max = 100) String confirmPassword) {
+        User user = userService.register(
+                name, email, sexe, paysCode, telephone, password, confirmPassword);
         String token = jwtUtil.generateToken(user.getId());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(new AuthResponse(token, UserResponse.from(user)));
@@ -78,10 +83,10 @@ public class UserController {
     }
 
     @GetMapping("/favoris")
-    public ResponseEntity<List<ProduitResponse>> getFavorites(@AuthenticationPrincipal Long userId) {
-        List<ProduitResponse> favoris = userService.findFavorites(userId)
+    public ResponseEntity<List<ProduitSummaryResponse>> getFavorites(@AuthenticationPrincipal Long userId) {
+        List<ProduitSummaryResponse> favoris = userService.findFavorites(userId)
                 .stream()
-                .map(ProduitResponse::from)
+                .map(ProduitSummaryResponse::from)
                 .toList();
         return ResponseEntity.ok(favoris);
     }

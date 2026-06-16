@@ -57,7 +57,7 @@ export function buildProductFormData(productData, imageFile) {
   formData.append('description', productData.description);
   formData.append('price', String(productData.price));
   formData.append('categorieNom', productData.category);
-  formData.append('brand', productData.brand);
+  formData.append('brand', productData.brand || '-');
   formData.append('whatsapp', productData.whatsapp);
   formData.append('statut', mapStatusToStatut(productData.status));
   formData.append('nouveau', String(productData.isNew));

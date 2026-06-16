@@ -1,20 +1,27 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { MarketplaceContext } from '../context/MarketplaceContext';
-import { getErrorMessage } from '../lib/api';
+import { fetchProductById, getErrorMessage } from '../lib/api';
+import CustomSelect from '../components/CustomSelect';
+import { CATEGORY_SELECT_OPTIONS } from '../lib/marketplaceCategories';
 import { HiOutlineArrowLeft, HiOutlinePhoto, HiOutlinePlusCircle } from 'react-icons/hi2';
+
+const STATUS_OPTIONS = [
+  { value: 'Disponible', label: 'Disponible' },
+  { value: 'Réservé', label: 'Réservé' },
+  { value: 'Indisponible', label: 'Indisponible' },
+];
 
 export default function AddEditProduct() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { currentUser, products, addProduct, editProduct } = useContext(MarketplaceContext);
+  const { currentUser, products, myProducts, isLoadingProducts, addProduct, editProduct } = useContext(MarketplaceContext);
   const isEditMode = !!id;
 
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState('');
-  const [category, setCategory] = useState('Téléphones');
-  const [brand, setBrand] = useState('Apple');
+  const [category, setCategory] = useState('Électronique');
   const [whatsapp, setWhatsapp] = useState(currentUser ? currentUser.whatsapp : '22890112233');
   const [imagePreview, setImagePreview] = useState('');
   const [imageFile, setImageFile] = useState(null);
@@ -22,31 +29,71 @@ export default function AddEditProduct() {
   const [isNew, setIsNew] = useState(true);
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isLoadingProduct, setIsLoadingProduct] = useState(isEditMode);
+
+  const populateForm = (product) => {
+    setName(product.name);
+    setDescription(product.description);
+    setPrice(String(product.price));
+    setCategory(product.category);
+    setWhatsapp(product.whatsapp);
+    setImagePreview(product.imageUrl || product.image);
+    setStatus(product.status);
+    setIsNew(product.isNew);
+  };
 
   useEffect(() => {
-    if (isEditMode) {
-      const product = products.find((p) => p.id === Number(id));
-      if (product) {
-        setName(product.name);
-        setDescription(product.description);
-        setPrice(String(product.price));
-        setCategory(product.category);
-        setBrand(product.brand);
-        setWhatsapp(product.whatsapp);
-        setImagePreview(product.imageUrl || product.image);
-        setStatus(product.status);
-        setIsNew(product.isNew);
-      } else {
-        navigate('/dashboard');
+    if (!isEditMode) return;
+
+    let isMounted = true;
+
+    async function loadForEdit() {
+      if (isLoadingProducts) return;
+
+      setIsLoadingProduct(true);
+      let product = products.find((p) => p.id === Number(id))
+        || myProducts.find((p) => p.id === Number(id));
+
+      if (!product) {
+        try {
+          product = await fetchProductById(id);
+        } catch {
+          if (isMounted) navigate('/dashboard');
+          return;
+        }
       }
+
+      if (!isMounted) return;
+
+      if (!currentUser || product.vendeurId !== currentUser.id) {
+        navigate('/dashboard');
+        return;
+      }
+
+      populateForm(product);
+      setIsLoadingProduct(false);
     }
-  }, [id, isEditMode, products, navigate]);
+
+    if (currentUser) {
+      loadForEdit();
+    }
+
+    return () => { isMounted = false; };
+  }, [id, isEditMode, products, myProducts, isLoadingProducts, currentUser, navigate]);
 
   useEffect(() => {
     if (!currentUser) {
       navigate('/login');
     }
   }, [currentUser, navigate]);
+
+  useEffect(() => {
+    return () => {
+      if (imagePreview && imagePreview.startsWith('blob:')) {
+        URL.revokeObjectURL(imagePreview);
+      }
+    };
+  }, [imagePreview]);
 
   const handleImageChange = (e) => {
     const file = e.target.files?.[0];
@@ -72,7 +119,6 @@ export default function AddEditProduct() {
       description,
       price: Number(price),
       category,
-      brand,
       whatsapp,
       status,
       isNew,
@@ -93,9 +139,16 @@ export default function AddEditProduct() {
     }
   };
 
+  if (isEditMode && isLoadingProduct) {
+    return (
+      <div className="bg-white p-12 text-center rounded-2xl border border-slate-100 shadow-sm max-w-md mx-auto my-12">
+        <p className="text-sm text-slate-400 font-semibold">Chargement du produit...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
-      
       <div className="flex items-center space-x-2">
         <Link
           to="/dashboard"
@@ -111,7 +164,6 @@ export default function AddEditProduct() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
-        
         <div className="lg:col-span-8 bg-white p-6 sm:p-8 rounded-3xl border border-slate-100 shadow-sm space-y-6">
           <div>
             <h2 className="text-lg sm:text-xl font-black text-slate-900 tracking-tight">
@@ -127,10 +179,11 @@ export default function AddEditProduct() {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
-            
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Nom du produit <span className="text-rose-500">*</span></label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                  Nom du produit <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={name}
@@ -141,39 +194,23 @@ export default function AddEditProduct() {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Marque</label>
-                <select
-                  value={brand}
-                  onChange={(e) => setBrand(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:border-brand-500 focus:bg-white transition-all font-semibold cursor-pointer"
-                >
-                  <option value="Apple">Apple</option>
-                  <option value="Samsung">Samsung</option>
-                  <option value="Dell">Dell</option>
-                  <option value="Lenovo">Lenovo</option>
-                  <option value="LG">LG</option>
-                  <option value="Bose">Bose</option>
-                </select>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Catégorie</label>
+                <CustomSelect
+                  value={category}
+                  onChange={setCategory}
+                  options={CATEGORY_SELECT_OPTIONS}
+                  variant="form"
+                  menuAlign="left"
+                  className="w-full"
+                />
               </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Catégorie</label>
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:border-brand-500 focus:bg-white transition-all font-semibold cursor-pointer"
-                >
-                  <option value="Téléphones">Téléphones</option>
-                  <option value="Ordinateurs">Ordinateurs</option>
-                  <option value="Tablettes">Tablettes</option>
-                  <option value="Accessoires">Accessoires</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Prix de vente (FCFA) <span className="text-rose-500">*</span></label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                  Prix de vente (FCFA) <span className="text-rose-500">*</span>
+                </label>
                 <div className="relative">
                   <input
                     type="number"
@@ -188,19 +225,23 @@ export default function AddEditProduct() {
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Description commerciale <span className="text-rose-500">*</span></label>
+              <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                Description commerciale <span className="text-rose-500">*</span>
+              </label>
               <textarea
                 value={description}
                 onChange={(e) => { setDescription(e.target.value); setError(''); }}
                 rows="4"
                 placeholder="Renseignez les détails techniques, le lot minimal de vente..."
                 className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:border-brand-500 focus:bg-white transition-all font-semibold resize-none"
-              ></textarea>
+              />
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Numéro WhatsApp <span className="text-rose-500">*</span></label>
+                <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">
+                  Numéro WhatsApp <span className="text-rose-500">*</span>
+                </label>
                 <input
                   type="text"
                   value={whatsapp}
@@ -212,15 +253,14 @@ export default function AddEditProduct() {
 
               <div>
                 <label className="text-xs font-bold text-slate-500 uppercase tracking-wider block mb-1.5">Statut de disponibilité</label>
-                <select
+                <CustomSelect
                   value={status}
-                  onChange={(e) => setStatus(e.target.value)}
-                  className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200/80 rounded-xl text-xs focus:outline-none focus:border-brand-500 focus:bg-white transition-all font-semibold cursor-pointer"
-                >
-                  <option value="Disponible">Disponible</option>
-                  <option value="Réservé">Réservé</option>
-                  <option value="Indisponible">Indisponible</option>
-                </select>
+                  onChange={setStatus}
+                  options={STATUS_OPTIONS}
+                  variant="form"
+                  menuAlign="left"
+                  className="w-full"
+                />
               </div>
             </div>
 
@@ -274,14 +314,13 @@ export default function AddEditProduct() {
                 </span>
               </button>
             </div>
-
           </form>
         </div>
 
         <aside className="lg:col-span-4 space-y-5">
           <div className="bg-slate-900/5 p-4 rounded-2xl border border-slate-200/50">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block text-center mb-3">Prévisualisation</span>
-            
+
             <div className="bg-white rounded-2xl border border-slate-100 shadow-premium overflow-hidden">
               <div className="p-4 flex justify-between items-start">
                 <div>
@@ -318,14 +357,13 @@ export default function AddEditProduct() {
                 </div>
                 <div className="flex justify-between items-end">
                   <span className="text-sm font-extrabold text-slate-900 mt-1">
-                    {price ? new Intl.NumberFormat('fr-FR').format(price) + ' FCFA' : '0 FCFA'}
+                    {price ? `${new Intl.NumberFormat('fr-FR').format(price)} FCFA` : '0 FCFA'}
                   </span>
                 </div>
               </div>
             </div>
           </div>
         </aside>
-
       </div>
     </div>
   );

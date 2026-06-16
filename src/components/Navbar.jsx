@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
-import { HiOutlineMapPin, HiChevronDown, HiOutlineChatBubbleLeftRight, HiOutlineBell, HiOutlineUserCircle, HiPlus } from 'react-icons/hi2';
+import { HiOutlineMapPin, HiChevronDown, HiPlus } from 'react-icons/hi2';
 import { MarketplaceContext } from '../context/MarketplaceContext';
 
 export default function Navbar() {
@@ -84,30 +84,15 @@ export default function Navbar() {
                 )}
               </Link>
               <Link 
-                to={currentUser ? "/dashboard" : "/login"} 
+                to={currentUser?.role === 'ADMIN' ? '/admin' : (currentUser ? '/dashboard' : '/login')} 
                 state={!currentUser ? { from: { pathname: "/dashboard" }, requireAuth: true } : undefined}
                 className={`text-xs font-semibold tracking-wider uppercase transition-colors duration-200 ${
-                  isActive('/dashboard') ? 'text-brand-400' : 'text-slate-300 hover:text-white'
+                  isActive('/dashboard') || isActive('/admin') ? 'text-brand-400' : 'text-slate-300 hover:text-white'
                 }`}
               >
-                Mon Espace
+                {currentUser?.role === 'ADMIN' ? 'Admin' : 'Mon Espace'}
               </Link>
             </nav>
-
-            {/* Simulated Icons with notifications */}
-            <div className="relative cursor-pointer hover:bg-slate-800 p-1.5 rounded-full transition-colors duration-200">
-              <HiOutlineChatBubbleLeftRight className="w-5 h-5 text-slate-300 hover:text-white" />
-              <span className="absolute -top-0.5 -right-0.5 bg-brand-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-slate-900">
-                1
-              </span>
-            </div>
-
-            <div className="relative cursor-pointer hover:bg-slate-800 p-1.5 rounded-full transition-colors duration-200">
-              <HiOutlineBell className="w-5 h-5 text-slate-300 hover:text-white" />
-              <span className="absolute -top-0.5 -right-0.5 bg-rose-500 text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center border-2 border-slate-900">
-                2
-              </span>
-            </div>
 
             {/* Profile Avatar / Login actions */}
             {currentUser ? (
@@ -131,15 +116,28 @@ export default function Navbar() {
                       <div className="px-4 py-2 border-b border-slate-100">
                         <p className="text-sm font-semibold text-slate-900 truncate">{currentUser.name}</p>
                         <p className="text-xs text-slate-500 truncate">{currentUser.email}</p>
-                        <p className="text-[10px] bg-slate-100 text-slate-600 inline-block px-1.5 py-0.5 rounded mt-1 font-medium">{currentUser.name}</p>
+                        <p className="text-[10px] bg-slate-100 text-slate-600 inline-block px-1.5 py-0.5 rounded mt-1 font-medium">
+                          {currentUser.role === 'ADMIN' ? 'Administrateur' : 'Vendeur'}
+                        </p>
                       </div>
-                      <Link
-                        to="/dashboard"
-                        onClick={() => setDropdownOpen(false)}
-                        className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 font-medium"
-                      >
-                        Tableau de bord
-                      </Link>
+                      {currentUser.role === 'ADMIN' && (
+                        <Link
+                          to="/admin"
+                          onClick={() => setDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-brand-600 hover:bg-brand-50 font-semibold"
+                        >
+                          Administration
+                        </Link>
+                      )}
+                      {currentUser.role !== 'ADMIN' && (
+                        <Link
+                          to="/dashboard"
+                          onClick={() => setDropdownOpen(false)}
+                          className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 font-medium"
+                        >
+                          Tableau de bord
+                        </Link>
+                      )}
                       <Link
                         to="/favorites"
                         onClick={() => setDropdownOpen(false)}

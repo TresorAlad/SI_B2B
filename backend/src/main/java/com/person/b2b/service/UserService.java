@@ -1,15 +1,19 @@
 package com.person.b2b.service;
 
 import com.person.b2b.entity.Produit;
+import com.person.b2b.entity.RoleUtilisateur;
+import com.person.b2b.entity.Sexe;
 import com.person.b2b.entity.User;
-import com.person.b2b.exception.EmailAlreadyExistsException;
+import com.person.b2b.exception.BadRequestException;
 import com.person.b2b.exception.EntityNotFoundException;
 import com.person.b2b.exception.InvalidCredentialsException;
 import com.person.b2b.repository.ProduitRepository;
 import com.person.b2b.repository.UserRepository;
+import com.person.b2b.util.PhoneUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,21 +47,44 @@ public class UserService {
                 .orElseThrow(() -> new EntityNotFoundException("Utilisateur introuvable : " + email));
     }
 
-    public User register(String name, String email, String password, String whatsapp) {
-        if (userRepository.existsByEmail(email)) {
-            throw new EmailAlreadyExistsException(email);
+    public User register(
+            String name,
+            String email,
+            Sexe sexe,
+            String paysCode,
+            String telephone,
+            String password,
+            String confirmPassword) {
+        if (!password.equals(confirmPassword)) {
+            throw new BadRequestException("Les mots de passe ne correspondent pas");
+        }
+        if (!PhoneUtil.isValidCountryCode(paysCode)) {
+            throw new BadRequestException("Pays invalide");
         }
 
+        String normalizedEmail = email.trim().toLowerCase();
+        String fullPhone = PhoneUtil.buildFullNumber(paysCode, telephone);
+
         User user = new User();
-        user.setName(name);
-        user.setEmail(email);
+        user.setName(name.trim());
+        user.setEmail(normalizedEmail);
         user.setPassword(passwordEncoder.encode(password));
-        user.setWhatsapp(whatsapp != null && !whatsapp.isBlank() ? whatsapp : "22890000000");
-        return userRepository.save(user);
+        user.setSexe(sexe != null ? sexe : Sexe.AUTRE);
+        user.setPaysCode(paysCode.trim().toUpperCase());
+        user.setTelephone(telephone.replaceAll("\\D", "").replaceFirst("^0", ""));
+        user.setWhatsapp(fullPhone);
+        user.setRole(RoleUtilisateur.VENDEUR);
+
+        try {
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new BadRequestException("Cet email est déjà utilisé");
+        }
     }
 
     public User login(String email, String password) {
-        User user = userRepository.findByEmail(email)
+        String normalizedEmail = email.trim().toLowerCase();
+        User user = userRepository.findByEmail(normalizedEmail)
                 .orElseThrow(InvalidCredentialsException::new);
 
         if (!passwordEncoder.matches(password, user.getPassword())) {

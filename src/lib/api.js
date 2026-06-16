@@ -29,10 +29,10 @@ function toFormBody(params) {
   return body;
 }
 
-export async function registerUser({ name, email, password, whatsapp }) {
+export async function registerUser({ name, email, sexe, paysCode, telephone, password, confirmPassword }) {
   const { data } = await api.post(
     '/api/users/register',
-    toFormBody({ name, email, password, whatsapp }),
+    toFormBody({ name, email, sexe, paysCode, telephone, password, confirmPassword }),
     { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
   );
   return data;
@@ -78,16 +78,12 @@ export async function fetchCategories() {
 }
 
 export async function createProduct(formData) {
-  const { data } = await api.post('/api/produits', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const { data } = await api.post('/api/produits', formData);
   return mapProduitFromApi(data);
 }
 
 export async function updateProduct(id, formData) {
-  const { data } = await api.put(`/api/produits/${id}`, formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  const { data } = await api.put(`/api/produits/${id}`, formData);
   return mapProduitFromApi(data);
 }
 
@@ -120,6 +116,11 @@ export async function checkIsFavorite(produitId) {
 export async function toggleFavoriteApi(produitId) {
   const { data } = await api.post(`/api/users/favoris/${produitId}`);
   return data.added;
+}
+
+export async function fetchAdminStats() {
+  const { data } = await api.get('/api/admin/stats');
+  return data;
 }
 
 export { getErrorMessage, API_BASE };

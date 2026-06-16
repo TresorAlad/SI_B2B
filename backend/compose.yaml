@@ -23,7 +23,7 @@ services:
       - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/b2b
       - SPRING_DATASOURCE_USERNAME=postgres
       - SPRING_DATASOURCE_PASSWORD=postgrespw
-      - JWT_SECRET=change-me-in-production-use-at-least-32-characters-long-secret-key
+      - JWT_SECRET=rsy7H/HfXyDxPTIDC66Xp8DFJToC2MOyopinKnh3L/sDUBObjaUVBqp/xA8Z+3qe
       - JWT_EXPIRATION_MS=86400000
       - APP_CORS_ALLOWED_ORIGINS=http://localhost:5173
     depends_on:

@@ -1,6 +1,8 @@
 import React, { useContext, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { MarketplaceContext } from '../context/MarketplaceContext';
+import { getErrorMessage } from '../lib/api';
+import { getProductPath } from '../lib/productSlug';
 import { HiOutlinePlus, HiOutlinePencilSquare, HiOutlineTrash, HiOutlineEye, HiOutlineCircleStack, HiOutlineChartBar, HiOutlineCheckBadge } from 'react-icons/hi2';
 
 export default function Dashboard() {
@@ -10,6 +12,7 @@ export default function Dashboard() {
   // Local state for delete confirmation modal
   const [productToDelete, setProductToDelete] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   // Compute analytics
   const analytics = useMemo(() => {
@@ -21,17 +24,19 @@ export default function Dashboard() {
 
   const handleDeleteClick = (product, e) => {
     e.preventDefault();
+    setDeleteError('');
     setProductToDelete(product);
   };
 
   const confirmDelete = async () => {
     if (!productToDelete) return;
     setIsDeleting(true);
+    setDeleteError('');
     try {
       await deleteProduct(productToDelete.id);
       setProductToDelete(null);
     } catch (error) {
-      console.error('Erreur suppression:', error);
+      setDeleteError(getErrorMessage(error));
     } finally {
       setIsDeleting(false);
     }
@@ -142,7 +147,7 @@ export default function Dashboard() {
             Chargement de votre catalogue...
           </div>
         ) : myProducts.length > 0 ? (
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto custom-scroll">
             <table className="w-full text-left text-sm whitespace-nowrap">
               <thead className="bg-slate-50 text-[10px] font-bold text-slate-400 uppercase tracking-wider">
                 <tr>
@@ -163,7 +168,7 @@ export default function Dashboard() {
                       <div className="w-10 h-10 rounded-lg bg-slate-50 border border-slate-100 p-1 flex items-center justify-center shrink-0">
                         <img src={product.imageUrl || product.image} alt={product.name} className="max-h-full object-contain" />
                       </div>
-                      <Link to={`/product/${product.id}`} className="font-extrabold text-slate-800 hover:text-brand-500 truncate max-w-[200px]">
+                      <Link to={getProductPath(product)} className="font-extrabold text-slate-800 hover:text-brand-500 truncate max-w-[200px]">
                         {product.name}
                       </Link>
                     </td>
@@ -250,10 +255,13 @@ export default function Dashboard() {
               <p className="text-xs text-slate-400 leading-relaxed">
                 Êtes-vous sûr de vouloir retirer définitivement <span className="font-bold text-slate-700">"{productToDelete.name}"</span> ? Cette action est irréversible.
               </p>
+              {deleteError && (
+                <p className="text-xs text-rose-600 font-semibold pt-1">{deleteError}</p>
+              )}
             </div>
             <div className="flex space-x-3 pt-2">
               <button
-                onClick={() => setProductToDelete(null)}
+                onClick={() => { setProductToDelete(null); setDeleteError(''); }}
                 className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold py-2.5 rounded-xl text-xs transition-colors"
               >
                 Annuler

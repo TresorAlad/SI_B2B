@@ -18,11 +18,25 @@ import { buildProductFormData } from '../lib/productMapper';
 
 export const MarketplaceContext = createContext();
 
+function safeParseJson(value, fallback) {
+  try {
+    return value ? JSON.parse(value) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
 function loadStoredUser() {
   const savedUser = localStorage.getItem('b2b_user');
   const token = localStorage.getItem('b2b_token');
   if (savedUser && token) {
-    return { user: JSON.parse(savedUser), token };
+    const user = safeParseJson(savedUser, null);
+    if (!user) {
+      localStorage.removeItem('b2b_user');
+      localStorage.removeItem('b2b_token');
+      return { user: null, token: null };
+    }
+    return { user, token };
   }
   return { user: null, token: null };
 }
@@ -35,8 +49,7 @@ export const MarketplaceProvider = ({ children }) => {
   const [myProducts, setMyProducts] = useState([]);
   const [favoriteProducts, setFavoriteProducts] = useState([]);
   const [favorites, setFavorites] = useState(() => {
-    const savedFavs = localStorage.getItem('b2b_favorites');
-    return savedFavs ? JSON.parse(savedFavs) : [];
+    return safeParseJson(localStorage.getItem('b2b_favorites'), []);
   });
   const [isLoadingProducts, setIsLoadingProducts] = useState(true);
   const [isLoadingMyProducts, setIsLoadingMyProducts] = useState(false);
@@ -55,10 +68,12 @@ export const MarketplaceProvider = ({ children }) => {
   const clearAuth = useCallback(() => {
     localStorage.removeItem('b2b_token');
     localStorage.removeItem('b2b_user');
+    localStorage.removeItem('b2b_favorites');
     setToken(null);
     setCurrentUser(null);
     setMyProducts([]);
     setFavoriteProducts([]);
+    setFavorites([]);
   }, []);
 
   const refreshProducts = useCallback(async () => {
@@ -103,6 +118,27 @@ export const MarketplaceProvider = ({ children }) => {
     }
   }, [token]);
 
+  const mergeLocalFavorites = useCallback(async () => {
+    const localIds = safeParseJson(localStorage.getItem('b2b_favorites'), []);
+    if (!localIds.length) return;
+
+    try {
+      const serverFavorites = await fetchFavorites();
+      const serverIds = new Set(serverFavorites.map((p) => p.id));
+      for (const id of localIds) {
+        if (!serverIds.has(id)) {
+          try {
+            await toggleFavoriteApi(id);
+          } catch (error) {
+            console.error('Erreur sync favori:', getErrorMessage(error));
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Erreur fusion favoris:', getErrorMessage(error));
+    }
+  }, []);
+
   useEffect(() => {
     refreshProducts();
   }, [refreshProducts]);
@@ -135,10 +171,11 @@ export const MarketplaceProvider = ({ children }) => {
     setAuthError(null);
     try {
       const authResponse = await loginUser({ email, password });
-      persistAuth(authResponse);
+      const user = persistAuth(authResponse);
       await refreshProducts();
+      await mergeLocalFavorites();
       await refreshFavorites();
-      return { success: true };
+      return { success: true, user };
     } catch (error) {
       const message = getErrorMessage(error);
       setAuthError(message);
@@ -146,13 +183,23 @@ export const MarketplaceProvider = ({ children }) => {
     }
   };
 
-  const register = async (name, email, password, whatsapp) => {
+  const register = async ({ name, email, sexe, paysCode, telephone, password, confirmPassword }) => {
     setAuthError(null);
     try {
-      const authResponse = await registerUser({ name, email, password, whatsapp });
-      persistAuth(authResponse);
+      const authResponse = await registerUser({
+        name,
+        email,
+        sexe,
+        paysCode,
+        telephone,
+        password,
+        confirmPassword,
+      });
+      const user = persistAuth(authResponse);
       await refreshProducts();
-      return { success: true };
+      await mergeLocalFavorites();
+      await refreshFavorites();
+      return { success: true, user };
     } catch (error) {
       const message = getErrorMessage(error);
       setAuthError(message);
@@ -192,12 +239,16 @@ export const MarketplaceProvider = ({ children }) => {
     try {
       const updated = await incrementProductViews(id);
       setProducts((prev) =>
-        prev.map((p) => (p.id === Number(id) ? { ...p, views: updated.views } : p))
+        prev.map((p) =>
+          p.id === Number(id)
+            ? { ...p, views: Math.max(p.views, updated.views) }
+            : p
+        )
       );
+      return updated;
     } catch (error) {
-      setProducts((prev) =>
-        prev.map((p) => (p.id === Number(id) ? { ...p, views: p.views + 1 } : p))
-      );
+      console.error('Erreur incrément vues:', getErrorMessage(error));
+      return null;
     }
   };
 
@@ -208,9 +259,11 @@ export const MarketplaceProvider = ({ children }) => {
         const added = await toggleFavoriteApi(numId);
         if (added) {
           const product = products.find((p) => p.id === numId);
-          setFavorites((prev) => [...prev, numId]);
+          setFavorites((prev) => (prev.includes(numId) ? prev : [...prev, numId]));
           if (product) {
-            setFavoriteProducts((prev) => [...prev, product]);
+            setFavoriteProducts((prev) =>
+              prev.some((p) => p.id === numId) ? prev : [...prev, product]
+            );
           } else {
             await refreshFavorites();
           }
@@ -220,6 +273,7 @@ export const MarketplaceProvider = ({ children }) => {
         }
       } catch (error) {
         console.error('Erreur favori:', getErrorMessage(error));
+        throw error;
       }
       return;
     }
@@ -230,6 +284,15 @@ export const MarketplaceProvider = ({ children }) => {
       }
       return [...prev, numId];
     });
+    const product = products.find((p) => p.id === numId);
+    if (product) {
+      setFavoriteProducts((prev) => {
+        if (prev.some((p) => p.id === numId)) {
+          return prev.filter((p) => p.id !== numId);
+        }
+        return [...prev, product];
+      });
+    }
   };
 
   const isFavorite = (id) => {

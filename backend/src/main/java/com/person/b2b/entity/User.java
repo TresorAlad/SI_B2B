@@ -2,6 +2,8 @@ package com.person.b2b.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -38,8 +40,22 @@ public class User {
     @Column(nullable = false, length = 255)
     private String password;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private Sexe sexe = Sexe.AUTRE;
+
+    @Column(nullable = false, length = 5)
+    private String paysCode = "TG";
+
+    @Column(nullable = false, length = 20)
+    private String telephone;
+
     @Column(nullable = false, length = 20)
     private String whatsapp;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private RoleUtilisateur role = RoleUtilisateur.VENDEUR;
 
     @OneToMany(mappedBy = "vendeur")
     private List<Produit> produits = new ArrayList<>();

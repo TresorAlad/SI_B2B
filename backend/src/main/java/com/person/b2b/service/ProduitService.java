@@ -4,6 +4,7 @@ import com.person.b2b.entity.CategorieProduit;
 import com.person.b2b.entity.Produit;
 import com.person.b2b.entity.StatutProduit;
 import com.person.b2b.entity.User;
+import com.person.b2b.exception.BadRequestException;
 import com.person.b2b.exception.EntityNotFoundException;
 import com.person.b2b.exception.ForbiddenOperationException;
 import com.person.b2b.repository.ProduitRepository;
@@ -47,7 +48,7 @@ public class ProduitService {
 
     @Transactional(readOnly = true)
     public Produit findById(Long id) {
-        return produitRepository.findById(id)
+        return produitRepository.findWithRelationsById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Produit introuvable : " + id));
     }
 
@@ -62,6 +63,8 @@ public class ProduitService {
             byte[] image,
             StatutProduit statut,
             boolean nouveau) {
+        validateProductInput(name, description, price, whatsapp, image);
+
         User vendeur = userService.findById(vendeurId);
         CategorieProduit categorie = categorieProduitService.findOrCreateByNom(categorieNom);
 
@@ -90,6 +93,7 @@ public class ProduitService {
             boolean nouveau,
             boolean updateImage) {
         Produit produit = findOwnedByVendeur(produitId, vendeurId);
+        validateProductInput(name, description, price, whatsapp, updateImage ? image : produit.getImage());
         CategorieProduit categorie = categorieProduitService.findOrCreateByNom(categorieNom);
 
         applyFields(produit, name, description, price, brand, whatsapp,
@@ -105,9 +109,12 @@ public class ProduitService {
     }
 
     public Produit incrementViews(Long produitId) {
-        Produit produit = findById(produitId);
-        produit.setViews(produit.getViews() + 1);
-        return produitRepository.save(produit);
+        int updated = produitRepository.incrementViews(produitId);
+        if (updated == 0) {
+            throw new EntityNotFoundException("Produit introuvable : " + produitId);
+        }
+        return produitRepository.findWithRelationsById(produitId)
+                .orElseThrow(() -> new EntityNotFoundException("Produit introuvable : " + produitId));
     }
 
     public Produit setMisEnAvant(Long produitId, Long vendeurId, boolean misEnAvant) {
@@ -134,13 +141,32 @@ public class ProduitService {
             byte[] image,
             StatutProduit statut,
             boolean nouveau) {
-        produit.setName(name);
-        produit.setDescription(description);
+        produit.setName(name.trim());
+        produit.setDescription(description.trim());
         produit.setPrice(price);
-        produit.setBrand(brand);
-        produit.setWhatsapp(whatsapp);
+        produit.setBrand(brand.trim());
+        produit.setWhatsapp(whatsapp.trim());
         produit.setImage(image);
         produit.setStatut(statut != null ? statut : StatutProduit.DISPONIBLE);
         produit.setNouveau(nouveau);
+    }
+
+    private void validateProductInput(
+            String name, String description, Long price, String whatsapp, byte[] image) {
+        if (name == null || name.isBlank()) {
+            throw new BadRequestException("Le nom du produit est obligatoire");
+        }
+        if (description == null || description.isBlank()) {
+            throw new BadRequestException("La description du produit est obligatoire");
+        }
+        if (price == null || price <= 0) {
+            throw new BadRequestException("Le prix doit être supérieur à 0");
+        }
+        if (whatsapp == null || whatsapp.isBlank()) {
+            throw new BadRequestException("Le numéro WhatsApp est obligatoire");
+        }
+        if (image == null || image.length == 0) {
+            throw new BadRequestException("L'image du produit est obligatoire");
+        }
     }
 }

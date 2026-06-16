@@ -44,9 +44,7 @@ public class SecurityConfig {
                 .accessDeniedHandler(accessDeniedHandler))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Routes publiques : auth
                 .requestMatchers(HttpMethod.POST, "/api/users/register", "/api/users/login").permitAll()
-                // Routes publiques : lecture produits et catégories
                 .requestMatchers(HttpMethod.GET,
                     "/api/produits",
                     "/api/produits/{id}",
@@ -55,9 +53,8 @@ public class SecurityConfig {
                     "/api/produits/vendeur/{vendeurId}",
                     "/api/categories",
                     "/api/categories/{id}").permitAll()
-                // Routes publiques : incrémenter les vues
                 .requestMatchers(HttpMethod.PATCH, "/api/produits/{id}/vues").permitAll()
-                // Tout le reste nécessite un JWT valide
+                .requestMatchers("/api/admin/**").hasRole("ADMIN")
                 .anyRequest().authenticated()
             )
             .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

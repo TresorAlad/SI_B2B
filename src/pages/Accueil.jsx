@@ -1,7 +1,16 @@
 import React, { useContext, useState, useMemo } from 'react';
 import { MarketplaceContext } from '../context/MarketplaceContext';
 import ProductCard from '../components/ProductCard';
+import CustomSelect from '../components/CustomSelect';
 import { HiOutlineMagnifyingGlass, HiOutlineFunnel, HiOutlineArrowsUpDown, HiOutlineXMark } from 'react-icons/hi2';
+import { FILTER_CATEGORIES } from '../lib/marketplaceCategories';
+
+const SORT_OPTIONS = [
+  { value: 'recommended', label: 'Trier par : Recommandé' },
+  { value: 'price-asc', label: 'Prix : Croissant' },
+  { value: 'price-desc', label: 'Prix : Décroissant' },
+  { value: 'views', label: 'Plus de vues' },
+];
 
 export default function Accueil() {
   const { products, isLoadingProducts } = useContext(MarketplaceContext);
@@ -9,7 +18,6 @@ export default function Accueil() {
   // --- Filtering & Sorting States ---
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Toutes');
-  const [selectedBrands, setSelectedBrands] = useState([]);
   const [minPrice, setMinPrice] = useState(0);
   const [maxPrice, setMaxPrice] = useState(3000000);
   const [onlyNew, setOnlyNew] = useState(false);
@@ -19,24 +27,11 @@ export default function Accueil() {
   // Mobile filter sidebar toggle
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
-  // Available categories & brands list computed from initial products
-  const categories = ['Toutes', 'Téléphones', 'Ordinateurs', 'Tablettes', 'Accessoires'];
-  const brands = ['Apple', 'Samsung', 'Dell', 'Lenovo', 'LG', 'Bose'];
+  const categories = FILTER_CATEGORIES;
 
-  // Handle Brand selection
-  const handleBrandChange = (brand) => {
-    if (selectedBrands.includes(brand)) {
-      setSelectedBrands(prev => prev.filter(b => b !== brand));
-    } else {
-      setSelectedBrands(prev => [...prev, brand]);
-    }
-  };
-
-  // Reset all filters
   const resetFilters = () => {
     setSearchQuery('');
     setSelectedCategory('Toutes');
-    setSelectedBrands([]);
     setMinPrice(0);
     setMaxPrice(3000000);
     setOnlyNew(false);
@@ -54,11 +49,7 @@ export default function Accueil() {
         
         // Category matching
         const matchesCategory = selectedCategory === 'Toutes' || product.category === selectedCategory;
-        
-        // Brands matching
-        const matchesBrand = selectedBrands.length === 0 || selectedBrands.includes(product.brand);
-        
-        // Price matching
+
         const matchesPrice = product.price >= minPrice && product.price <= maxPrice;
         
         // "Nouveau" status matching
@@ -67,7 +58,7 @@ export default function Accueil() {
         // Available status matching
         const matchesAvailable = !onlyAvailable || product.status === 'Disponible';
 
-        return matchesSearch && matchesCategory && matchesBrand && matchesPrice && matchesNew && matchesAvailable;
+        return matchesSearch && matchesCategory && matchesPrice && matchesNew && matchesAvailable;
       })
       .sort((a, b) => {
         // Sorting logic
@@ -76,7 +67,7 @@ export default function Accueil() {
         if (sortBy === 'views') return b.views - a.views;
         return b.id - a.id; // "recommended" / newest listings first
       });
-  }, [products, searchQuery, selectedCategory, selectedBrands, minPrice, maxPrice, onlyNew, onlyAvailable, sortBy]);
+  }, [products, searchQuery, selectedCategory, minPrice, maxPrice, onlyNew, onlyAvailable, sortBy]);
 
   // Active filter chips list helper
   const activeChips = useMemo(() => {
@@ -84,9 +75,6 @@ export default function Accueil() {
     if (selectedCategory !== 'Toutes') {
       chips.push({ id: 'category', label: selectedCategory, onRemove: () => setSelectedCategory('Toutes') });
     }
-    selectedBrands.forEach(brand => {
-      chips.push({ id: `brand-${brand}`, label: brand, onRemove: () => handleBrandChange(brand) });
-    });
     if (onlyNew) {
       chips.push({ id: 'new', label: 'Nouveautés', onRemove: () => setOnlyNew(false) });
     }
@@ -101,7 +89,7 @@ export default function Accueil() {
       });
     }
     return chips;
-  }, [selectedCategory, selectedBrands, onlyNew, onlyAvailable, minPrice, maxPrice]);
+  }, [selectedCategory, onlyNew, onlyAvailable, minPrice, maxPrice]);
 
   return (
     <div className="space-y-6">
@@ -122,14 +110,14 @@ export default function Accueil() {
             Tous les Produits
           </button>
           <button
-            onClick={() => { setSelectedCategory('Ordinateurs'); }}
+            onClick={() => setSelectedCategory('Électronique')}
             className={`flex-1 md:flex-none px-5 py-2 text-xs font-bold rounded-lg transition-all ${
-              selectedCategory === 'Ordinateurs'
+              selectedCategory === 'Électronique'
                 ? 'bg-brand-500 text-white shadow-sm'
                 : 'text-slate-500 hover:text-slate-800'
             }`}
           >
-            Ventes en Gros
+            Électronique
           </button>
         </div>
 
@@ -140,7 +128,7 @@ export default function Accueil() {
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Rechercher un produit, une marque..."
+            placeholder="Rechercher un produit, une catégorie..."
             className="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200/80 hover:border-slate-300 focus:border-brand-500 focus:bg-white focus:outline-none rounded-xl text-sm transition-all shadow-inner-sm text-slate-700 font-medium"
           />
           {searchQuery && (
@@ -163,19 +151,13 @@ export default function Accueil() {
             <span>Filtres</span>
           </button>
 
-          <div className="flex items-center space-x-2 bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 w-full md:w-auto">
-            <HiOutlineArrowsUpDown className="w-4 h-4 text-slate-400 shrink-0" />
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value)}
-              className="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer w-full"
-            >
-              <option value="recommended">Trier par: Recommandé</option>
-              <option value="price-asc">Prix: Croissant</option>
-              <option value="price-desc">Prix: Décroissant</option>
-              <option value="views">Plus de Vues</option>
-            </select>
-          </div>
+          <CustomSelect
+            value={sortBy}
+            onChange={setSortBy}
+            options={SORT_OPTIONS}
+            icon={HiOutlineArrowsUpDown}
+            className="w-full md:w-auto"
+          />
         </div>
       </div>
 
@@ -183,7 +165,7 @@ export default function Accueil() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         
         {/* LEFT COLUMN: Sidebar Filters (desktop layout) */}
-        <aside className={`lg:block ${showMobileFilters ? 'block fixed inset-0 z-40 bg-white p-6 overflow-y-auto' : 'hidden'} lg:static lg:bg-transparent lg:p-0`}>
+        <aside className={`lg:block ${showMobileFilters ? 'block fixed inset-0 z-40 bg-white p-6 overflow-y-auto custom-scroll' : 'hidden'} lg:static lg:bg-transparent lg:p-0`}>
           {showMobileFilters && (
             <div className="flex justify-between items-center mb-6 lg:hidden">
               <h2 className="text-lg font-extrabold text-slate-900">Filtres avancés</h2>
@@ -243,7 +225,7 @@ export default function Accueil() {
             {/* Categories buttons */}
             <div className="space-y-3">
               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Catégorie</span>
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 max-h-48 overflow-y-auto custom-scroll pr-1">
                 {categories.map((cat) => (
                   <button
                     key={cat}
@@ -256,26 +238,6 @@ export default function Accueil() {
                   >
                     {cat}
                   </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Brand Checkboxes */}
-            <div className="space-y-3">
-              <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">Marque</span>
-              <div className="space-y-2">
-                {brands.map((brand) => (
-                  <label key={brand} className="flex items-center justify-between text-xs font-semibold text-slate-600 hover:text-slate-800 cursor-pointer">
-                    <div className="flex items-center space-x-2">
-                      <input
-                        type="checkbox"
-                        checked={selectedBrands.includes(brand)}
-                        onChange={() => handleBrandChange(brand)}
-                        className="rounded border-slate-300 text-brand-500 focus:ring-brand-500 h-3.5 w-3.5 cursor-pointer"
-                      />
-                      <span>{brand}</span>
-                    </div>
-                  </label>
                 ))}
               </div>
             </div>

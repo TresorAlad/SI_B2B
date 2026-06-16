@@ -11,6 +11,9 @@ import Register from '../pages/Register';
 import Dashboard from '../pages/Dashboard';
 import AddEditProduct from '../pages/AddEditProduct';
 import Favorites from '../pages/Favorites';
+import NotFound from '../pages/NotFound';
+import AdminDashboard from '../pages/AdminDashboard';
+import AdminRoute from './AdminRoute';
 
 export default function AppRoutes() {
   return (
@@ -24,6 +27,15 @@ export default function AppRoutes() {
         } 
       />
       
+      <Route 
+        path="/annonce/:slug" 
+        element={
+          <MainLayout>
+            <ProductDetail />
+          </MainLayout>
+        } 
+      />
+
       <Route 
         path="/product/:id" 
         element={
@@ -92,6 +104,26 @@ export default function AppRoutes() {
             <Favorites />
           </MainLayout>
         } 
+      />
+
+      <Route
+        path="/admin"
+        element={
+          <AdminRoute>
+            <MainLayout>
+              <AdminDashboard />
+            </MainLayout>
+          </AdminRoute>
+        }
+      />
+
+      <Route
+        path="*"
+        element={
+          <MainLayout>
+            <NotFound />
+          </MainLayout>
+        }
       />
     </Routes>
   );
