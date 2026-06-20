@@ -19,7 +19,6 @@ services:
   backend:
     image: maven:3.9.4-eclipse-temurin-21
     restart: unless-stopped
-    user: "${UID:-1000}:${GID:-1000}"
     env_file:
       - .env
     working_dir: /app
