@@ -3,6 +3,8 @@ import {
   registerUser,
   loginUser,
   fetchCurrentUser,
+  updateProfile as updateProfileApi,
+  deleteAccount as deleteAccountApi,
   fetchProducts,
   fetchVendeurProducts,
   fetchFavorites,
@@ -211,6 +213,47 @@ export const MarketplaceProvider = ({ children }) => {
     clearAuth();
   };
 
+  const updateProfile = async ({
+    name,
+    email,
+    paysCode,
+    telephone,
+    currentPassword,
+    newPassword,
+    confirmPassword,
+  }) => {
+    try {
+      const user = await updateProfileApi({
+        name,
+        email,
+        paysCode,
+        telephone,
+        currentPassword,
+        newPassword,
+        confirmPassword,
+      });
+      const merged = { ...user, token };
+      setCurrentUser(merged);
+      localStorage.setItem('b2b_user', JSON.stringify(merged));
+      return { success: true, user: merged };
+    } catch (error) {
+      const message = getErrorMessage(error);
+      return { success: false, error: message };
+    }
+  };
+
+  const deleteAccount = async (password) => {
+    try {
+      await deleteAccountApi(password);
+      clearAuth();
+      await refreshProducts();
+      return { success: true };
+    } catch (error) {
+      const message = getErrorMessage(error);
+      return { success: false, error: message };
+    }
+  };
+
   const addProduct = async (productData, imageFile) => {
     const formData = buildProductFormData(productData, imageFile);
     const created = await createProduct(formData);
@@ -330,6 +373,8 @@ export const MarketplaceProvider = ({ children }) => {
         login,
         register,
         logout,
+        updateProfile,
+        deleteAccount,
         addProduct,
         editProduct,
         deleteProduct,

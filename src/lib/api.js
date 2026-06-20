@@ -54,6 +54,37 @@ export async function fetchCurrentUser() {
   return data;
 }
 
+export async function updateProfile({
+  name,
+  email,
+  paysCode,
+  telephone,
+  currentPassword,
+  newPassword,
+  confirmPassword,
+}) {
+  const { data } = await api.put(
+    '/api/users/me',
+    toFormBody({
+      name,
+      email,
+      paysCode,
+      telephone,
+      currentPassword,
+      newPassword,
+      confirmPassword,
+    }),
+    { headers: { 'Content-Type': 'application/x-www-form-urlencoded' } }
+  );
+  return data;
+}
+
+export async function deleteAccount(password) {
+  await api.delete('/api/users/me', {
+    params: { password },
+  });
+}
+
 export async function fetchProducts() {
   const { data } = await api.get('/api/produits');
   return data.map(mapProduitFromApi);

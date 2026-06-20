@@ -11,6 +11,7 @@ import Register from '../pages/Register';
 import Dashboard from '../pages/Dashboard';
 import AddEditProduct from '../pages/AddEditProduct';
 import Favorites from '../pages/Favorites';
+import Profile from '../pages/Profile';
 import NotFound from '../pages/NotFound';
 import AdminDashboard from '../pages/AdminDashboard';
 import AdminRoute from './AdminRoute';
@@ -104,6 +105,17 @@ export default function AppRoutes() {
             <Favorites />
           </MainLayout>
         } 
+      />
+
+      <Route
+        path="/profile"
+        element={
+          <ProtectedRoute>
+            <MainLayout>
+              <Profile />
+            </MainLayout>
+          </ProtectedRoute>
+        }
       />
 
       <Route

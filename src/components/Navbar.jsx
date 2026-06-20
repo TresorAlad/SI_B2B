@@ -145,6 +145,13 @@ export default function Navbar() {
                       >
                         Mes favoris ({favorites.length})
                       </Link>
+                      <Link
+                        to="/profile"
+                        onClick={() => setDropdownOpen(false)}
+                        className="block px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 font-medium"
+                      >
+                        Mon profil
+                      </Link>
                       <button
                         onClick={handleLogout}
                         className="block w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 font-semibold border-t border-slate-100 mt-1"
