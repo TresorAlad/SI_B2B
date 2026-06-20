@@ -16,9 +16,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -39,6 +41,30 @@ public class UserController {
     @GetMapping("/me")
     public ResponseEntity<UserResponse> me(@AuthenticationPrincipal Long userId) {
         return ResponseEntity.ok(UserResponse.from(userService.findById(userId)));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<UserResponse> updateProfile(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam @NotBlank @Size(max = 150) String name,
+            @RequestParam @NotBlank @Email String email,
+            @RequestParam @NotBlank @Size(min = 2, max = 5) String paysCode,
+            @RequestParam @NotBlank @Size(max = 20) String telephone,
+            @RequestParam(required = false) String currentPassword,
+            @RequestParam(required = false) @Size(min = 6, max = 100) String newPassword,
+            @RequestParam(required = false) @Size(min = 6, max = 100) String confirmPassword) {
+        User user = userService.updateProfile(
+                userId, name, email, paysCode, telephone,
+                currentPassword, newPassword, confirmPassword);
+        return ResponseEntity.ok(UserResponse.from(user));
+    }
+
+    @DeleteMapping("/me")
+    public ResponseEntity<Void> deleteAccount(
+            @AuthenticationPrincipal Long userId,
+            @RequestParam @NotBlank String password) {
+        userService.deleteAccount(userId, password);
+        return ResponseEntity.noContent().build();
     }
 
     @PostMapping("/register")

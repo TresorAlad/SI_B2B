@@ -121,4 +121,82 @@ public class UserService {
     public List<Produit> findFavorites(Long userId) {
         return new ArrayList<>(findById(userId).getFavoris());
     }
+
+    public User updateProfile(
+            Long userId,
+            String name,
+            String email,
+            String paysCode,
+            String telephone,
+            String currentPassword,
+            String newPassword,
+            String confirmPassword) {
+        User user = findById(userId);
+
+        if (name == null || name.isBlank()) {
+            throw new BadRequestException("Le nom est obligatoire");
+        }
+        if (email == null || email.isBlank()) {
+            throw new BadRequestException("L'email est obligatoire");
+        }
+        if (telephone == null || telephone.isBlank()) {
+            throw new BadRequestException("Le numéro de téléphone est obligatoire");
+        }
+        if (!PhoneUtil.isValidCountryCode(paysCode)) {
+            throw new BadRequestException("Pays invalide");
+        }
+
+        boolean wantsPasswordChange = newPassword != null && !newPassword.isBlank();
+        if (wantsPasswordChange) {
+            if (currentPassword == null || currentPassword.isBlank()) {
+                throw new BadRequestException("Le mot de passe actuel est requis pour le changer");
+            }
+            if (!passwordEncoder.matches(currentPassword, user.getPassword())) {
+                throw new BadRequestException("Mot de passe actuel incorrect");
+            }
+            if (newPassword.length() < 6) {
+                throw new BadRequestException("Le nouveau mot de passe doit contenir au moins 6 caractères");
+            }
+            if (!newPassword.equals(confirmPassword)) {
+                throw new BadRequestException("Les mots de passe ne correspondent pas");
+            }
+            user.setPassword(passwordEncoder.encode(newPassword));
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+        if (!normalizedEmail.equals(user.getEmail()) && userRepository.existsByEmail(normalizedEmail)) {
+            throw new BadRequestException("Cet email est déjà utilisé");
+        }
+
+        String fullPhone = PhoneUtil.buildFullNumber(paysCode, telephone);
+        user.setName(name.trim());
+        user.setEmail(normalizedEmail);
+        user.setPaysCode(paysCode.trim().toUpperCase());
+        user.setTelephone(telephone.replaceAll("\\D", "").replaceFirst("^0", ""));
+        user.setWhatsapp(fullPhone);
+
+        try {
+            return userRepository.save(user);
+        } catch (DataIntegrityViolationException ex) {
+            throw new BadRequestException("Cet email est déjà utilisé");
+        }
+    }
+
+    public void deleteAccount(Long userId, String password) {
+        User user = findById(userId);
+
+        if (password == null || password.isBlank()) {
+            throw new BadRequestException("Le mot de passe est requis pour supprimer le compte");
+        }
+        if (!passwordEncoder.matches(password, user.getPassword())) {
+            throw new BadRequestException("Mot de passe incorrect");
+        }
+
+        List<Produit> produits = produitRepository.findByVendeurIdOrderByDatePublicationDesc(userId);
+        produitRepository.deleteAll(produits);
+
+        user.getFavoris().clear();
+        userRepository.save(user);
+        userRepository.delete(user);
+    }
 }
