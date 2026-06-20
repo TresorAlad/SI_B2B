@@ -1,0 +1,6 @@
+# Surcharge pour le développement local (spring-boot:run sur la machine hôte).
+# Usage : docker compose -f compose.yaml -f compose.dev.yaml up -d postgres
+services:
+  postgres:
+    ports:
+      - "5433:5432"
