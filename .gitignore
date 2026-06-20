@@ -18,6 +18,7 @@ backend/.env
 
 # Java / Maven
 backend/target/
+backend/build/
 
 # Editor directories and files
 .vscode/*
